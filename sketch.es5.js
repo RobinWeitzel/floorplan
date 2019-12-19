@@ -285,6 +285,7 @@ function mouseDragged() {
 
 function touchMoved() {
   dragFunction();
+  return false;
 }
 
 function mouseReleased() {
