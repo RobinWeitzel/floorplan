@@ -132,6 +132,12 @@ function draw() {
     for (const object of objects) {
         object.draw();
     }
+
+    strokeWeight(1);
+    textAlign(LEFT, TOP);
+    textSize(16);
+    textFont('Georgia');
+    text("Hold line pressed to create corner", 200, 20);
 }
 
 const selectFunction = (tolerance) => {
