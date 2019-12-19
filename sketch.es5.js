@@ -117,6 +117,45 @@ function () {
   return Connection;
 }();
 
+var Button =
+/*#__PURE__*/
+function () {
+  function Button(x, y, text) {
+    _classCallCheck(this, Button);
+
+    this.x = x;
+    this.y = y;
+    this.text = text;
+    this.width = 150;
+    this.height = 50;
+    this.type = "Button";
+    this.selected = false;
+  }
+
+  _createClass(Button, [{
+    key: "draw",
+    value: function draw() {
+      stroke(0);
+      strokeWeight(3);
+      rect(this.x, this.y, this.width, this.height);
+      strokeWeight(1);
+      textAlign(CENTER, CENTER);
+      textSize(16);
+      textFont('Georgia');
+      text(this.text, this.x + this.width / 2, this.y + this.height / 2);
+    }
+  }, {
+    key: "checkCollision",
+    value: function checkCollision(tolerance) {
+      if (mouseX < this.x || mouseX > this.x + this.width) return false;
+      if (mouseY < this.y || mouseY > this.y + this.height) return false;
+      return true;
+    }
+  }]);
+
+  return Button;
+}();
+
 var corner1 = new Corner(100, 100);
 var corner2 = new Corner(100, 300);
 var corner3 = new Corner(300, 100);
@@ -125,7 +164,8 @@ var connection1 = new Connection(corner1, corner2);
 var connection2 = new Connection(corner1, corner3);
 var connection3 = new Connection(corner2, corner4);
 var connection4 = new Connection(corner3, corner4);
-var objects = [corner1, corner2, corner3, corner4, connection1, connection2, connection3, connection4];
+var deleteButton = new Button(0, 0, "Delete Corner");
+var objects = [corner1, corner2, corner3, corner4, connection1, connection2, connection3, connection4, deleteButton];
 var selection = undefined;
 var timeout = undefined;
 var moved = false;
@@ -144,9 +184,16 @@ function draw() {
     var object = _objects[_i];
     object.draw();
   }
+
+  strokeWeight(1);
+  textAlign(LEFT, TOP);
+  textSize(16);
+  textFont('Georgia');
+  text("Hold line pressed to create corner", 200, 20);
 }
 
 var selectFunction = function selectFunction(tolerance) {
+  var oldSelection = selection;
   selection = undefined;
   startX = mouseX;
   startY = mouseY;
@@ -159,29 +206,31 @@ var selectFunction = function selectFunction(tolerance) {
       var object = _step.value;
 
       if (!selection && object.checkCollision(tolerance)) {
-        object.selected = true;
-        selection = object;
+        if (object.type === "Button") {
+          deleteCorner(oldSelection);
+        } else {
+          object.selected = true;
+          selection = object;
 
-        if (selection.type === "Connection") {
-          timeout = setTimeout(function () {
-            if (!moved) {
-              var corner = new Corner(mouseX, mouseY);
+          if (selection.type === "Connection") {
+            timeout = setTimeout(function () {
+              if (!moved) {
+                var corner = new Corner(mouseX, mouseY);
 
-              var _connection = new Connection(selection.corner1, corner);
+                var _connection = new Connection(selection.corner1, corner);
 
-              var _connection2 = new Connection(corner, selection.corner2);
+                var _connection2 = new Connection(corner, selection.corner2);
 
-              objects.splice(objects.indexOf(selection), 1);
-              objects.push(corner);
-              objects.push(_connection);
-              objects.push(_connection2);
-              corner.selected = true;
-              selection = corner;
-            }
-          }, 1000);
+                objects.splice(objects.indexOf(selection), 1);
+                objects.push(corner);
+                objects.push(_connection);
+                objects.push(_connection2);
+                corner.selected = true;
+                selection = corner;
+              }
+            }, 1000);
+          }
         }
-      } else {
-        object.selected = false;
       }
     }
   } catch (err) {
@@ -198,6 +247,12 @@ var selectFunction = function selectFunction(tolerance) {
       }
     }
   }
+
+  objects.filter(function (o) {
+    return o !== selection;
+  }).forEach(function (o) {
+    return o.selected = false;
+  });
 };
 
 var dragFunction = function dragFunction(tolerance) {
@@ -253,18 +308,20 @@ var dragEnded = function dragEnded() {
   }
 };
 
-var deleteCorner = function deleteCorner() {
-  if (!selection || selection.type !== "Corner") {
+var deleteCorner = function deleteCorner(corner) {
+  corner = corner || selection;
+
+  if (!corner || corner.type !== "Corner") {
     return;
   }
 
   var connections = objects.filter(function (o) {
-    return o.corner1 === selection || o.corner2 === selection;
+    return o.corner1 === corner || o.corner2 === corner;
   });
   var connection1 = connections[0];
   var connection2 = connections[1];
-  var newConnection = new Connection(connection1.getOtherCorner(selection), connection2.getOtherCorner(selection));
-  objects.splice(objects.indexOf(selection), 1);
+  var newConnection = new Connection(connection1.getOtherCorner(corner), connection2.getOtherCorner(corner));
+  objects.splice(objects.indexOf(corner), 1);
   objects.splice(objects.indexOf(connection1), 1);
   objects.splice(objects.indexOf(connection2), 1);
   objects.push(newConnection);
