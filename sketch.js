@@ -191,19 +191,19 @@ function keyPressed() {
 }
 
 function mousePressed() {
-    selectFunction();
+    selectFunction(1);
 }
 
 function touchStarted() {
-    selectFunction();
+    selectFunction(3);
 }
 
 function mouseDragged() {
-    dragFunction(1);
+    dragFunction();
 }
 
 function touchMoved() {
-    dragFunction(3);
+    dragFunction();
     return false;
 }
 

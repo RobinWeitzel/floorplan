@@ -60,8 +60,8 @@ function () {
     }
   }, {
     key: "checkCollision",
-    value: function checkCollision() {
-      if (Math.abs(this.x - mouseX) <= this.width / 2 && Math.abs(this.y - mouseY) <= this.width / 2) {
+    value: function checkCollision(tolerance) {
+      if (Math.abs(this.x - mouseX) <= this.width / 2 && Math.abs(this.y - mouseY) <= this.width / 2 * tolerance) {
         return true;
       }
     }
@@ -92,11 +92,11 @@ function () {
     }
   }, {
     key: "checkCollision",
-    value: function checkCollision() {
+    value: function checkCollision(tolerance) {
       var distanceToCorner1 = Math.sqrt(Math.pow(this.corner1.x - mouseX, 2) + Math.pow(this.corner1.y - mouseY, 2));
       var distanceToCorner2 = Math.sqrt(Math.pow(this.corner2.x - mouseX, 2) + Math.pow(this.corner2.y - mouseY, 2));
       var distanceBetweenCorners = Math.sqrt(Math.pow(this.corner2.x - this.corner1.x, 2) + Math.pow(this.corner2.y - this.corner1.y, 2));
-      return distanceToCorner1 + distanceToCorner2 - distanceBetweenCorners <= 0.5;
+      return distanceToCorner1 + distanceToCorner2 - distanceBetweenCorners <= 0.5 * tolerance;
     }
   }, {
     key: "getSlope",
@@ -144,7 +144,7 @@ function draw() {
   }
 }
 
-var selectFunction = function selectFunction() {
+var selectFunction = function selectFunction(tolerance) {
   selection = undefined;
   var _iteratorNormalCompletion = true;
   var _didIteratorError = false;
@@ -154,7 +154,7 @@ var selectFunction = function selectFunction() {
     for (var _iterator = objects[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
       var object = _step.value;
 
-      if (!selection && object.checkCollision()) {
+      if (!selection && object.checkCollision(tolerance)) {
         object.selected = true;
         selection = object;
 
@@ -272,11 +272,11 @@ function keyPressed() {
 }
 
 function mousePressed() {
-  selectFunction();
+  selectFunction(1);
 }
 
 function touchStarted() {
-  selectFunction();
+  selectFunction(3);
 }
 
 function mouseDragged() {
