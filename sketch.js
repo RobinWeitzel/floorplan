@@ -27,8 +27,8 @@ class Corner {
         point(this.x, this.y);
     }
 
-    checkCollision() {
-        if (Math.abs(this.x - mouseX) <= this.width / 2 && Math.abs(this.y - mouseY) <= this.width / 2) {
+    checkCollision(tolerance) {
+        if (Math.abs(this.x - mouseX) <= this.width / 2 && Math.abs(this.y - mouseY) <= (this.width / 2) * tolerance) {
             return true;
         }
     }
@@ -49,11 +49,11 @@ class Connection {
         line(this.corner1.x, this.corner1.y, this.corner2.x, this.corner2.y);
     }
 
-    checkCollision() {
+    checkCollision(tolerance) {
         const distanceToCorner1 = Math.sqrt(Math.pow(this.corner1.x - mouseX, 2) + Math.pow(this.corner1.y - mouseY, 2));
         const distanceToCorner2 = Math.sqrt(Math.pow(this.corner2.x - mouseX, 2) + Math.pow(this.corner2.y - mouseY, 2));
         const distanceBetweenCorners = Math.sqrt(Math.pow(this.corner2.x - this.corner1.x, 2) + Math.pow(this.corner2.y - this.corner1.y, 2));
-        return distanceToCorner1 + distanceToCorner2 - distanceBetweenCorners <= 0.5;
+        return distanceToCorner1 + distanceToCorner2 - distanceBetweenCorners <= 0.5 * tolerance;
     }
 
     getSlope() {
@@ -97,10 +97,10 @@ function draw() {
     }
 }
 
-const selectFunction = () => {
+const selectFunction = (tolerance) => {
     selection = undefined;
     for (const object of objects) {
-        if (!selection && object.checkCollision()) {
+        if (!selection && object.checkCollision(tolerance)) {
             object.selected = true;
             selection = object;
 
@@ -199,11 +199,11 @@ function touchStarted() {
 }
 
 function mouseDragged() {
-    dragFunction();
+    dragFunction(1);
 }
 
 function touchMoved() {
-    dragFunction();
+    dragFunction(3);
     return false;
 }
 
