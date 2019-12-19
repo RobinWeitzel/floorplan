@@ -80,9 +80,12 @@ const connection4 = new Connection(corner3, corner4);
 const objects = [corner1, corner2, corner3, corner4, connection1, connection2, connection3, connection4];
 
 let selection = undefined;
-let moved = false;
 
 let timeout = undefined;
+
+let moved = false;
+let startX;
+let startY;
 
 function setup() {
     createCanvas(displayWidth, displayHeight);
@@ -99,6 +102,8 @@ function draw() {
 
 const selectFunction = (tolerance) => {
     selection = undefined;
+    startX = mouseX;
+    startY = mouseY;
     for (const object of objects) {
         if (!selection && object.checkCollision(tolerance)) {
             object.selected = true;
@@ -126,8 +131,11 @@ const selectFunction = (tolerance) => {
     }
 }
 
-const dragFunction = () => {
-    moved = true;
+const dragFunction = (tolerance) => {
+    if(!moved && Math.abs(mouseX - startX) + Math.abs(mouseY - startY) > tolerance) {
+        moved = true;
+    }
+
     if (!selection) {
         return;
     }
@@ -157,6 +165,8 @@ const dragFunction = () => {
 
 const dragEnded = () => {
     moved = false;
+    startX = undefined;
+    startY = undefined;
 
     if(timeout) {
         clearTimeout(timeout);
@@ -199,11 +209,11 @@ function touchStarted() {
 }
 
 function mouseDragged() {
-    dragFunction();
+    dragFunction(0);
 }
 
 function touchMoved() {
-    dragFunction();
+    dragFunction(5);
     return false;
 }
 

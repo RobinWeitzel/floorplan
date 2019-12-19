@@ -127,8 +127,10 @@ var connection3 = new Connection(corner2, corner4);
 var connection4 = new Connection(corner3, corner4);
 var objects = [corner1, corner2, corner3, corner4, connection1, connection2, connection3, connection4];
 var selection = undefined;
-var moved = false;
 var timeout = undefined;
+var moved = false;
+var startX;
+var startY;
 
 function setup() {
   createCanvas(displayWidth, displayHeight);
@@ -146,6 +148,8 @@ function draw() {
 
 var selectFunction = function selectFunction(tolerance) {
   selection = undefined;
+  startX = mouseX;
+  startY = mouseY;
   var _iteratorNormalCompletion = true;
   var _didIteratorError = false;
   var _iteratorError = undefined;
@@ -196,8 +200,10 @@ var selectFunction = function selectFunction(tolerance) {
   }
 };
 
-var dragFunction = function dragFunction() {
-  moved = true;
+var dragFunction = function dragFunction(tolerance) {
+  if (!moved && Math.abs(mouseX - startX) + Math.abs(mouseY - startY) > tolerance) {
+    moved = true;
+  }
 
   if (!selection) {
     return;
@@ -239,6 +245,8 @@ var dragFunction = function dragFunction() {
 
 var dragEnded = function dragEnded() {
   moved = false;
+  startX = undefined;
+  startY = undefined;
 
   if (timeout) {
     clearTimeout(timeout);
@@ -280,11 +288,11 @@ function touchStarted() {
 }
 
 function mouseDragged() {
-  dragFunction();
+  dragFunction(0);
 }
 
 function touchMoved() {
-  dragFunction();
+  dragFunction(5);
   return false;
 }
 
