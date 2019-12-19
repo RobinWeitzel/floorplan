@@ -69,6 +69,39 @@ class Connection {
     }
 }
 
+class Button {
+    constructor(x, y, text) {
+        this.x = x;
+        this.y = y;
+        this.text = text;
+        this.width = 150;
+        this.height = 50;
+        this.type = "Button";
+        this.selected = false;
+    }
+
+    draw() {
+        stroke(0);
+        strokeWeight(3);
+        rect(this.x, this.y, this.width, this.height);
+        strokeWeight(1);
+        textAlign(CENTER, CENTER);
+        textSize(16);
+        textFont('Georgia');
+        text(this.text, this.x + this.width/2, this.y + this.height/2);
+    }
+
+    checkCollision(tolerance) {
+        if(mouseX < this.x || mouseX > this.x + this.width)
+            return false;
+
+        if(mouseY < this.y || mouseY > this.y + this.height)
+            return false;
+
+        return true;
+    }
+}
+
 const corner1 = new Corner(100, 100);
 const corner2 = new Corner(100, 300);
 const corner3 = new Corner(300, 100);
@@ -77,7 +110,8 @@ const connection1 = new Connection(corner1, corner2);
 const connection2 = new Connection(corner1, corner3);
 const connection3 = new Connection(corner2, corner4);
 const connection4 = new Connection(corner3, corner4);
-const objects = [corner1, corner2, corner3, corner4, connection1, connection2, connection3, connection4];
+const deleteButton = new Button(0, 0, "Delete Corner");
+const objects = [corner1, corner2, corner3, corner4, connection1, connection2, connection3, connection4, deleteButton];
 
 let selection = undefined;
 
@@ -101,34 +135,39 @@ function draw() {
 }
 
 const selectFunction = (tolerance) => {
+    const oldSelection = selection;
     selection = undefined;
     startX = mouseX;
     startY = mouseY;
     for (const object of objects) {
         if (!selection && object.checkCollision(tolerance)) {
-            object.selected = true;
-            selection = object;
+            if(object.type === "Button") {
+                deleteCorner(oldSelection);
+            } else {
+                object.selected = true;
+                selection = object;
 
-            if(selection.type === "Connection") {
-                timeout = setTimeout(() => {
-                    if(!moved) {
-                        const corner = new Corner(mouseX, mouseY);
-                        const connection1 = new Connection(selection.corner1, corner);
-                        const connection2 = new Connection(corner, selection.corner2);
-                        objects.splice(objects.indexOf(selection), 1);
-                        objects.push(corner);
-                        objects.push(connection1);
-                        objects.push(connection2);
+                if(selection.type === "Connection") {
+                    timeout = setTimeout(() => {
+                        if(!moved) {
+                            const corner = new Corner(mouseX, mouseY);
+                            const connection1 = new Connection(selection.corner1, corner);
+                            const connection2 = new Connection(corner, selection.corner2);
+                            objects.splice(objects.indexOf(selection), 1);
+                            objects.push(corner);
+                            objects.push(connection1);
+                            objects.push(connection2);
 
-                        corner.selected = true;
-                        selection = corner;
-                    }
-                }, 1000);
+                            corner.selected = true;
+                            selection = corner;
+                        }
+                    }, 1000);
+                }
             }
-        } else {
-            object.selected = false;
         }
     }
+
+    objects.filter(o => o !== selection).forEach(o => o.selected = false);
 }
 
 const dragFunction = (tolerance) => {
@@ -173,18 +212,19 @@ const dragEnded = () => {
     }
 }
 
-const deleteCorner = () => {
-    if(!selection || selection.type !== "Corner") {
+const deleteCorner = (corner) => {
+    corner = corner || selection;
+    if(!corner || corner.type !== "Corner") {
         return;
     }
 
-    const connections = objects.filter(o => o.corner1 === selection || o.corner2 === selection);
+    const connections = objects.filter(o => o.corner1 === corner || o.corner2 === corner);
     const connection1 = connections[0];
     const connection2 = connections[1];
 
-    const newConnection = new Connection(connection1.getOtherCorner(selection), connection2.getOtherCorner(selection));
+    const newConnection = new Connection(connection1.getOtherCorner(corner), connection2.getOtherCorner(corner));
 
-    objects.splice(objects.indexOf(selection), 1);
+    objects.splice(objects.indexOf(corner), 1);
     objects.splice(objects.indexOf(connection1), 1);
     objects.splice(objects.indexOf(connection2), 1);
     objects.push(newConnection);
