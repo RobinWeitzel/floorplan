@@ -85,7 +85,7 @@ let moved = false;
 let timeout = undefined;
 
 function setup() {
-    createCanvas(1000, 1000);
+    createCanvas(displayWidth, displayHeight);
     frameRate(60);
 }
 
