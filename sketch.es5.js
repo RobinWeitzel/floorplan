@@ -349,7 +349,7 @@ function mouseDragged() {
 }
 
 function touchMoved() {
-  dragFunction(5);
+  dragFunction(25);
   return false;
 }
 
