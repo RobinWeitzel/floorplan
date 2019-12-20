@@ -1,7 +1,10 @@
 Array.prototype.first = function() {
-
-    return;
- };
+    if(this.length > 0) {
+        return this[0];
+    } else {
+        return null;
+    }
+};
 
 const mobileAndTabletCheck = () => {
     let check = false;
@@ -33,7 +36,11 @@ class Corner {
     }
 
     draw() {
-        stroke(this.selected ? 255 : 0);
+        if(this.selected) {
+            stroke(173, 216, 230);
+        } else {
+            stroke(0);
+        }
         strokeWeight(this.selected ? this.width*2 : this.width);
         point(this.x, this.y);
     }
@@ -42,6 +49,10 @@ class Corner {
         if (Math.abs(this.x - mouseX) <= this.width / 2 && Math.abs(this.y - mouseY) <= (this.width / 2) * tolerance) {
             return true;
         }
+    }
+
+    setSelection(selected) {
+        this.selected = selected;
     }
 }
 
@@ -55,9 +66,27 @@ class Connection {
     }
 
     draw() {
-        stroke(this.selected ? 255 : 0);
+        if(this.selected) {
+            stroke(173, 216, 230);
+        } else {
+            stroke(0);
+        }
         strokeWeight(this.selected ? this.width*2 : this.width);
         line(this.corner1.x, this.corner1.y, this.corner2.x, this.corner2.y);
+
+        strokeWeight(1);
+        textAlign(CENTER, CENTER);
+        textSize(12);
+        fill(0);
+        textFont('Georgia');
+        const x = (this.corner1.x + this.corner2.x) / 2;
+        const y = (this.corner1.y + this.corner2.y) / 2;
+        const diffX = x - center.x;
+        const diffY = y - center.y;
+        const partX = diffX / (Math.abs(diffX) + Math.abs(diffY));
+        const partY = diffY / (Math.abs(diffX) + Math.abs(diffY));
+        const length = Math.round(Math.sqrt(Math.pow(this.corner2.x - this.corner1.x, 2) + Math.pow(this.corner2.y - this.corner1.y, 2)) / 50, 2);
+        text(length + "m", x + 20*partX, y + 20*partY);
     }
 
     checkCollision(tolerance) {
@@ -78,6 +107,16 @@ class Connection {
             return this.corner1;
         }
     }
+
+    setSelection(selected) {
+        this.selected = selected;
+        if(this.corner1 !== selection) {
+            this.corner1.selected = selected;
+        }
+        if(this.corner2 !== selection) {
+            this.corner2.selected = selected;
+        }
+    }
 }
 
 class Button {
@@ -93,11 +132,13 @@ class Button {
 
     draw() {
         stroke(0);
+        fill(255);
         strokeWeight(3);
         rect(this.x, this.y, this.width, this.height);
         strokeWeight(1);
         textAlign(CENTER, CENTER);
         textSize(16);
+        fill(0);
         textFont('Georgia');
         text(this.text, this.x + this.width/2, this.y + this.height/2);
     }
@@ -111,14 +152,18 @@ class Button {
 
         return true;
     }
+
+    setSelection(selected) {
+        this.selected = selected;
+    }
 }
 
 const onTouchDevice = mobileAndTabletCheck();
 
 const corner1 = new Corner(100, 100);
-const corner2 = new Corner(100, 300);
-const corner3 = new Corner(300, 100);
-const corner4 = new Corner(300, 300);
+const corner2 = new Corner(100, 350);
+const corner3 = new Corner(350, 100);
+const corner4 = new Corner(350, 350);
 const connection1 = new Connection(corner1, corner2);
 const connection2 = new Connection(corner1, corner3);
 const connection3 = new Connection(corner2, corner4);
@@ -133,6 +178,7 @@ let timeout = undefined;
 let moved = false;
 let startX;
 let startY;
+let center;
 
 function setup() {
     createCanvas(displayWidth, displayHeight);
@@ -142,14 +188,28 @@ function setup() {
 function draw() {
     background(220);
 
-    for (const object of objects) {
+    // Fill
+    drawInFill();
+
+    // Lines
+    center = objects.filter(o => o.type === "Corner").reduce((p, c) => {return {x: p.x + c.x, y: p.y + c.y}}, {x: 0, y:0});
+    const length = objects.filter(o => o.type === "Corner").length;
+    center = {
+        x: center.x / length,
+        y: center.y / length
+    }
+
+    for (const object of objects.filter(o => o !== selection)) {
         object.draw();
     }
 
-    // Fill
-    
+    if(selection) {
+        selection.draw();
+    }
 
     // Text
+    stroke(0);
+    fill(0);
     strokeWeight(1);
     textAlign(LEFT, TOP);
     textSize(16);
@@ -166,19 +226,20 @@ const drawInFill = () => {
         return;
     }
 
-    const start = corners[0];
-
-    const nextConnection = connections.filter(connection => (connection.corner1 === start || connection.corner2 === start) && connectionsVisited.indexOf(connection) < 0);
-
-    if(nextConnection)
-
     noStroke();
     fill(255);
     beginShape();
-    for (const object of objects) {
-        if(object.type === "Corner") {
-            vertex(object.x, object.y);
-        }
+
+    let start = corners[0];
+
+    let nextConnection = connections.filter(connection => (connection.corner1 === start || connection.corner2 === start) && connectionsVisited.indexOf(connection) < 0).first();
+
+    while(nextConnection) {
+        connectionsVisited.push(nextConnection);
+        start = nextConnection.getOtherCorner(start);
+        vertex(start.x, start.y);
+        nextConnection = connections.filter(connection => (connection.corner1 === start || connection.corner2 === start) && connectionsVisited.indexOf(connection) < 0).first();
+
     }
     endShape(CLOSE);
 }
@@ -193,7 +254,7 @@ const selectFunction = (tolerance) => {
             if(object.type === "Button") {
                 deleteCorner(oldSelection);
             } else {
-                object.selected = true;
+                object.setSelection(true);
                 selection = object;
 
                 if(selection.type === "Connection") {
@@ -207,7 +268,7 @@ const selectFunction = (tolerance) => {
                             objects.push(connection1);
                             objects.push(connection2);
 
-                            corner.selected = true;
+                            corner.setSelection(true);
                             selection = corner;
                         }
                     }, 1000);
@@ -216,7 +277,7 @@ const selectFunction = (tolerance) => {
         }
     }
 
-    objects.filter(o => o !== selection).forEach(o => o.selected = false);
+    objects.filter(o => o !== selection).forEach(o => o.setSelection(false));
 }
 
 const dragFunction = (tolerance) => {
