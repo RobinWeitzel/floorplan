@@ -298,7 +298,7 @@ function touchStarted() {
 }
 
 function mouseDragged() {
-    dragFunction(onTouchDevice ? 25 : 0);
+    dragFunction(onTouchDevice ? 25 : 5);
 }
 
 function touchMoved() {
