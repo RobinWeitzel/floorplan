@@ -348,7 +348,7 @@ function keyPressed() {
 }
 
 function mousePressed() {
-  selectFunction(onTouchDevice ? 3 : 0);
+  selectFunction(onTouchDevice ? 3 : 1);
 }
 
 function touchStarted() {
