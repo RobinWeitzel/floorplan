@@ -477,13 +477,12 @@ var selectFunction = function selectFunction(tolerance) {
   var _iteratorError4 = undefined;
 
   try {
-    for (var _iterator4 = connections[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-      var _object = _step4.value;
+    var _loop = function _loop() {
+      var object = _step4.value;
 
-      if (!selection && _object.checkCollision(tolerance)) {
-        _object.setSelection(true);
-
-        selection = _object;
+      if (!selection && object.checkCollision(tolerance)) {
+        object.setSelection(true);
+        selection = object;
         timeout = setTimeout(function () {
           if (!moved) {
             var corner = new Corner(mouseX / zoom - posX, mouseY / zoom - posY);
@@ -493,6 +492,7 @@ var selectFunction = function selectFunction(tolerance) {
             var _connection2 = new Connection(corner, selection.corner2);
 
             corners.splice(corners.indexOf(selection), 1);
+            connections.splice(connections.indexOf(object), 1);
             corners.push(corner);
             connections.push(_connection);
             connections.push(_connection2);
@@ -501,6 +501,10 @@ var selectFunction = function selectFunction(tolerance) {
           }
         }, 1000);
       }
+    };
+
+    for (var _iterator4 = connections[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+      _loop();
     }
   } catch (err) {
     _didIteratorError4 = true;
