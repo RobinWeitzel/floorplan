@@ -393,6 +393,7 @@ function draw() {
 }
 
 var drawInFill = function drawInFill() {
+  var cornersVisited = [];
   var connectionsVisited = [];
 
   if (corners.length < 3) {
@@ -403,16 +404,13 @@ var drawInFill = function drawInFill() {
   fill(255);
   beginShape();
   var area = 0;
-  var x = 0;
-  var y = 0;
   var start = corners[0];
   var nextConnection = connections.filter(function (connection) {
     return (connection.corner1 === start || connection.corner2 === start) && connectionsVisited.indexOf(connection) < 0;
   }).first();
 
   while (nextConnection) {
-    x += start.x;
-    y += start.y;
+    cornersVisited.push(start);
     connectionsVisited.push(nextConnection);
     var other = nextConnection.getOtherCorner(start);
     area += start.x * other.y - other.x * start.y;
@@ -428,14 +426,20 @@ var drawInFill = function drawInFill() {
   area /= 2;
   area = Math.round(area / Math.pow(50, 2) * 10) / 10;
   if (area < 0) area *= -1;
-  x /= corners.length;
-  y /= corners.length;
   stroke(0);
   fill(0);
   strokeWeight(1);
   textAlign(LEFT, TOP);
   textSize(16);
   textFont('Georgia');
+
+  var _polylabel = polylabel([cornersVisited.map(function (c) {
+    return [c.x, c.y];
+  })], 1.0),
+      _polylabel2 = _slicedToArray(_polylabel, 2),
+      x = _polylabel2[0],
+      y = _polylabel2[1];
+
   text(area + "m" + char(178), x, y);
 };
 

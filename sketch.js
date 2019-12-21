@@ -290,6 +290,7 @@ function draw() {
 }
 
 const drawInFill = () => {
+    const cornersVisited = [];
     const connectionsVisited = [];
 
     if (corners.length < 3) {
@@ -301,15 +302,12 @@ const drawInFill = () => {
     beginShape();
 
     let area = 0;
-    let x = 0;
-    let y = 0;
     let start = corners[0];
 
     let nextConnection = connections.filter(connection => (connection.corner1 === start || connection.corner2 === start) && connectionsVisited.indexOf(connection) < 0).first();
 
     while (nextConnection) {
-        x += start.x;
-        y += start.y;
+        cornersVisited.push(start);
         connectionsVisited.push(nextConnection);
         const other = nextConnection.getOtherCorner(start);
 
@@ -323,16 +321,10 @@ const drawInFill = () => {
     endShape(CLOSE);
 
     area += (start.x * corners[0].y) - (corners[0].x * start.y);
-
     area /= 2;
-
     area = Math.round(area / Math.pow(50, 2) * 10) / 10;
-
     if(area < 0)
         area *= -1;
-
-    x /= corners.length;
-    y /= corners.length;
 
     stroke(0);
     fill(0);
@@ -340,6 +332,8 @@ const drawInFill = () => {
     textAlign(LEFT, TOP);
     textSize(16);
     textFont('Georgia');
+    
+    const [x, y] = polylabel([cornersVisited.map(c => [c.x, c.y])], 1.0);
     text(area + "m" + char(178), x, y);
 }
 
