@@ -16,6 +16,14 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
+Array.prototype.first = function () {
+  if (this.length > 0) {
+    return this[0];
+  } else {
+    return null;
+  }
+};
+
 var mobileAndTabletCheck = function mobileAndTabletCheck() {
   var check = false;
 
@@ -56,7 +64,7 @@ function () {
 
     this.x = x;
     this.y = y;
-    this.width = 10;
+    this.width = 5;
     this.selected = false;
     this.type = "Corner";
   }
@@ -64,16 +72,26 @@ function () {
   _createClass(Corner, [{
     key: "draw",
     value: function draw() {
-      stroke(this.selected ? 255 : 0);
+      if (this.selected) {
+        stroke(173, 216, 230);
+      } else {
+        stroke(0);
+      }
+
       strokeWeight(this.selected ? this.width * 2 : this.width);
       point(this.x, this.y);
     }
   }, {
     key: "checkCollision",
     value: function checkCollision(tolerance) {
-      if (Math.abs(this.x - mouseX) <= this.width / 2 && Math.abs(this.y - mouseY) <= this.width / 2 * tolerance) {
+      if (Math.abs(this.x - (mouseX / zoom - posX)) <= this.width && Math.abs(this.y - (mouseY / zoom - posY)) <= this.width * tolerance) {
         return true;
       }
+    }
+  }, {
+    key: "setSelection",
+    value: function setSelection(selected) {
+      this.selected = selected;
     }
   }]);
 
@@ -96,15 +114,94 @@ function () {
   _createClass(Connection, [{
     key: "draw",
     value: function draw() {
-      stroke(this.selected ? 255 : 0);
+      if (this.selected) {
+        stroke(173, 216, 230);
+      } else {
+        stroke(0);
+      }
+
       strokeWeight(this.selected ? this.width * 2 : this.width);
       line(this.corner1.x, this.corner1.y, this.corner2.x, this.corner2.y);
+
+      if (this.corner1.selected || this.corner2.selected) {
+        this.drawMeasurements();
+      }
+    }
+  }, {
+    key: "drawMeasurements",
+    value: function drawMeasurements() {
+      var desiredDistance = 20;
+      var width = this.selected ? this.width * 2 : this.width;
+      var dx = this.corner1.x - this.corner2.x;
+      var dy = this.corner1.y - this.corner2.y;
+      var dist = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+      dx /= dist;
+      dy /= dist; // Determine on which side to draw
+
+      var x = (this.corner1.x + this.corner2.x) / 2;
+      var y = (this.corner1.y + this.corner2.y) / 2;
+      var color1 = get((x + (width / 2 + 1) * dy + posX) * zoom, (y - (width / 2 + 1) * dx + posY) * zoom);
+      strokeWeight(2);
+      stroke(173, 216, 230);
+      drawingContext.setLineDash([10, 10]);
+
+      if (color1[0] === 255 && color1[1] === 255 && color1[2] === 255) {
+        var x1 = this.corner1.x - desiredDistance * dy;
+        var y1 = this.corner1.y + desiredDistance * dx;
+        var x4 = this.corner2.x - desiredDistance * dy;
+        var y4 = this.corner2.y + desiredDistance * dx;
+        var x2 = x1 - (dist / 2 - 20) * dx;
+        var y2 = y1 - (dist / 2 - 20) * dy;
+        var x3 = x1 - (dist / 2 + 20) * dx;
+        var y3 = y1 - (dist / 2 + 20) * dy;
+        line(x1, y1, x2, y2);
+        line(x3, y3, x4, y4);
+        drawingContext.setLineDash([]);
+        line(this.corner1.x, this.corner1.y, x1, y1);
+        line(this.corner2.x, this.corner2.y, x4, y4); // text
+
+        strokeWeight(0.5);
+        fill(173, 216, 230);
+        textAlign(CENTER, CENTER);
+        textSize(12);
+        textFont('Georgia');
+        text(Math.round(dist / 50 * 10) / 10 + "m", x - desiredDistance * dy, y + desiredDistance * dx);
+      } else {
+        var _x = this.corner1.x + desiredDistance * dy;
+
+        var _y = this.corner1.y - desiredDistance * dx;
+
+        var _x2 = this.corner2.x + desiredDistance * dy;
+
+        var _y2 = this.corner2.y - desiredDistance * dx;
+
+        var _x3 = _x - (dist / 2 - 20) * dx;
+
+        var _y3 = _y - (dist / 2 - 20) * dy;
+
+        var _x4 = _x - (dist / 2 + 20) * dx;
+
+        var _y4 = _y - (dist / 2 + 20) * dy;
+
+        line(_x, _y, _x3, _y3);
+        line(_x4, _y4, _x2, _y2);
+        drawingContext.setLineDash([]);
+        line(this.corner1.x, this.corner1.y, _x, _y);
+        line(this.corner2.x, this.corner2.y, _x2, _y2); // text
+
+        strokeWeight(0.5);
+        fill(173, 216, 230);
+        textAlign(CENTER, CENTER);
+        textSize(12);
+        textFont('Georgia');
+        text(Math.round(dist / 50 * 10) / 10 + "m", x + desiredDistance * dy, y - desiredDistance * dx);
+      }
     }
   }, {
     key: "checkCollision",
     value: function checkCollision(tolerance) {
-      var distanceToCorner1 = Math.sqrt(Math.pow(this.corner1.x - mouseX, 2) + Math.pow(this.corner1.y - mouseY, 2));
-      var distanceToCorner2 = Math.sqrt(Math.pow(this.corner2.x - mouseX, 2) + Math.pow(this.corner2.y - mouseY, 2));
+      var distanceToCorner1 = Math.sqrt(Math.pow(this.corner1.x - (mouseX / zoom - posX), 2) + Math.pow(this.corner1.y - (mouseY / zoom - posY), 2));
+      var distanceToCorner2 = Math.sqrt(Math.pow(this.corner2.x - (mouseX / zoom - posX), 2) + Math.pow(this.corner2.y - (mouseY / zoom - posY), 2));
       var distanceBetweenCorners = Math.sqrt(Math.pow(this.corner2.x - this.corner1.x, 2) + Math.pow(this.corner2.y - this.corner1.y, 2));
       return distanceToCorner1 + distanceToCorner2 - distanceBetweenCorners <= 0.5 * tolerance;
     }
@@ -120,6 +217,16 @@ function () {
         return this.corner2;
       } else {
         return this.corner1;
+      }
+    }
+  }, {
+    key: "setSelection",
+    value: function setSelection(selected) {
+      this.selected = selected;
+
+      if (selected) {
+        this.corner1.selected = selected;
+        this.corner2.selected = selected;
       }
     }
   }]);
@@ -146,11 +253,13 @@ function () {
     key: "draw",
     value: function draw() {
       stroke(0);
+      fill(255);
       strokeWeight(3);
       rect(this.x, this.y, this.width, this.height);
       strokeWeight(1);
       textAlign(CENTER, CENTER);
       textSize(16);
+      fill(0);
       textFont('Georgia');
       text(this.text, this.x + this.width / 2, this.y + this.height / 2);
     }
@@ -161,6 +270,11 @@ function () {
       if (mouseY < this.y || mouseY > this.y + this.height) return false;
       return true;
     }
+  }, {
+    key: "setSelection",
+    value: function setSelection(selected) {
+      this.selected = selected;
+    }
   }]);
 
   return Button;
@@ -168,81 +282,57 @@ function () {
 
 var onTouchDevice = mobileAndTabletCheck();
 var corner1 = new Corner(100, 100);
-var corner2 = new Corner(100, 300);
-var corner3 = new Corner(300, 100);
-var corner4 = new Corner(300, 300);
+var corner2 = new Corner(100, 350);
+var corner3 = new Corner(350, 100);
+var corner4 = new Corner(350, 350);
 var connection1 = new Connection(corner1, corner2);
 var connection2 = new Connection(corner1, corner3);
 var connection3 = new Connection(corner2, corner4);
 var connection4 = new Connection(corner3, corner4);
 var deleteButton = new Button(0, 0, "Delete Corner");
-var objects = [corner1, corner2, corner3, corner4, connection1, connection2, connection3, connection4, deleteButton];
+var corners = [corner1, corner2, corner3, corner4];
+var connections = [connection1, connection2, connection3, connection4];
 var selection = undefined;
 var timeout = undefined;
 var moved = false;
 var startX;
 var startY;
+var posX = 0;
+var posY = 0;
 
 function setup() {
   createCanvas(displayWidth, displayHeight);
   frameRate(60);
+  var hammer = new Hammer(document.body, {
+    preventDefault: true
+  });
+  hammer.get('pinch').set({
+    enable: true
+  });
+  hammer.on("pinch", function (e) {
+    zoom = e.scale;
+  });
 }
+
+var zoom = 1;
 
 function draw() {
-  background(220);
+  background(240);
+  scale(zoom);
+  translate(posX, posY); // Fill
 
-  for (var _i = 0, _objects = objects; _i < _objects.length; _i++) {
-    var object = _objects[_i];
-    object.draw();
-  }
+  drawInFill(); // Lines
 
-  strokeWeight(1);
-  textAlign(LEFT, TOP);
-  textSize(16);
-  textFont('Georgia');
-  text("Hold line pressed to\ncreate corner", 200, 20);
-}
-
-var selectFunction = function selectFunction(tolerance) {
-  var oldSelection = selection;
-  selection = undefined;
-  startX = mouseX;
-  startY = mouseY;
   var _iteratorNormalCompletion = true;
   var _didIteratorError = false;
   var _iteratorError = undefined;
 
   try {
-    for (var _iterator = objects[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var object = _step.value;
-
-      if (!selection && object.checkCollision(tolerance)) {
-        if (object.type === "Button") {
-          deleteCorner(oldSelection);
-        } else {
-          object.selected = true;
-          selection = object;
-
-          if (selection.type === "Connection") {
-            timeout = setTimeout(function () {
-              if (!moved) {
-                var corner = new Corner(mouseX, mouseY);
-
-                var _connection = new Connection(selection.corner1, corner);
-
-                var _connection2 = new Connection(corner, selection.corner2);
-
-                objects.splice(objects.indexOf(selection), 1);
-                objects.push(corner);
-                objects.push(_connection);
-                objects.push(_connection2);
-                corner.selected = true;
-                selection = corner;
-              }
-            }, 1000);
-          }
-        }
-      }
+    for (var _iterator = connections.filter(function (connection) {
+      return connection !== selection;
+    })[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var connection = _step.value;
+      connection.draw();
     }
   } catch (err) {
     _didIteratorError = true;
@@ -259,36 +349,223 @@ var selectFunction = function selectFunction(tolerance) {
     }
   }
 
-  objects.filter(function (o) {
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
+
+  try {
+    for (var _iterator2 = corners.filter(function (corner) {
+      return corner !== selection;
+    })[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var corner = _step2.value;
+      corner.draw();
+    }
+  } catch (err) {
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
+        _iterator2.return();
+      }
+    } finally {
+      if (_didIteratorError2) {
+        throw _iteratorError2;
+      }
+    }
+  }
+
+  if (selection) {
+    selection.draw();
+  }
+
+  translate(-posX, -posY);
+  scale(1 / zoom);
+  deleteButton.draw(); // Text
+
+  stroke(0);
+  fill(0);
+  strokeWeight(1);
+  textAlign(LEFT, TOP);
+  textSize(16);
+  textFont('Georgia');
+  text("Hold line pressed to\ncreate corner", 200, 20);
+}
+
+var drawInFill = function drawInFill() {
+  var connectionsVisited = [];
+
+  if (corners.length < 3) {
+    return;
+  }
+
+  noStroke();
+  fill(255);
+  beginShape();
+  var area = 0;
+  var x = 0;
+  var y = 0;
+  var start = corners[0];
+  var nextConnection = connections.filter(function (connection) {
+    return (connection.corner1 === start || connection.corner2 === start) && connectionsVisited.indexOf(connection) < 0;
+  }).first();
+
+  while (nextConnection) {
+    x += start.x;
+    y += start.y;
+    connectionsVisited.push(nextConnection);
+    var other = nextConnection.getOtherCorner(start);
+    area += start.x * other.y - other.x * start.y;
+    start = other;
+    vertex(start.x, start.y);
+    nextConnection = connections.filter(function (connection) {
+      return (connection.corner1 === start || connection.corner2 === start) && connectionsVisited.indexOf(connection) < 0;
+    }).first();
+  }
+
+  endShape(CLOSE);
+  area += start.x * corners[0].y - corners[0].x * start.y;
+  area /= 2;
+  area = Math.round(area / Math.pow(50, 2) * 10) / 10;
+  if (area < 0) area *= -1;
+  x /= corners.length;
+  y /= corners.length;
+  stroke(0);
+  fill(0);
+  strokeWeight(1);
+  textAlign(LEFT, TOP);
+  textSize(16);
+  textFont('Georgia');
+  text(area + "m" + char(178), x, y);
+};
+
+var selectFunction = function selectFunction(tolerance) {
+  var oldSelection = selection;
+  selection = undefined;
+  startX = mouseX / zoom - posX;
+  startY = mouseY / zoom - posY;
+  var _iteratorNormalCompletion3 = true;
+  var _didIteratorError3 = false;
+  var _iteratorError3 = undefined;
+
+  try {
+    for (var _iterator3 = corners[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+      var object = _step3.value;
+
+      if (!selection && object.checkCollision(tolerance)) {
+        object.setSelection(true);
+        selection = object;
+      }
+    }
+  } catch (err) {
+    _didIteratorError3 = true;
+    _iteratorError3 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion3 && _iterator3.return != null) {
+        _iterator3.return();
+      }
+    } finally {
+      if (_didIteratorError3) {
+        throw _iteratorError3;
+      }
+    }
+  }
+
+  var _iteratorNormalCompletion4 = true;
+  var _didIteratorError4 = false;
+  var _iteratorError4 = undefined;
+
+  try {
+    for (var _iterator4 = connections[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+      var _object = _step4.value;
+
+      if (!selection && _object.checkCollision(tolerance)) {
+        _object.setSelection(true);
+
+        selection = _object;
+        timeout = setTimeout(function () {
+          if (!moved) {
+            var corner = new Corner(mouseX / zoom - posX, mouseY / zoom - posY);
+
+            var _connection = new Connection(selection.corner1, corner);
+
+            var _connection2 = new Connection(corner, selection.corner2);
+
+            corners.splice(corners.indexOf(selection), 1);
+            corners.push(corner);
+            connections.push(_connection);
+            connections.push(_connection2);
+            corner.setSelection(true);
+            selection = corner;
+          }
+        }, 1000);
+      }
+    }
+  } catch (err) {
+    _didIteratorError4 = true;
+    _iteratorError4 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion4 && _iterator4.return != null) {
+        _iterator4.return();
+      }
+    } finally {
+      if (_didIteratorError4) {
+        throw _iteratorError4;
+      }
+    }
+  }
+
+  if (!selection && deleteButton.checkCollision(tolerance)) {
+    deleteCorner(oldSelection);
+  }
+
+  corners.filter(function (o) {
+    return selection === undefined || o !== selection && o !== selection.corner1 && o !== selection.corner2;
+  }).forEach(function (o) {
+    return o.setSelection(false);
+  });
+  connections.filter(function (o) {
     return o !== selection;
   }).forEach(function (o) {
-    return o.selected = false;
+    return o.setSelection(false);
   });
 };
 
 var dragFunction = function dragFunction(tolerance) {
-  if (!moved && Math.abs(mouseX - startX) + Math.abs(mouseY - startY) > tolerance) {
-    moved = true;
-  }
-
   if (!selection) {
+    if (!isNaN(mouseX / zoom - posX - startX)) {
+      posX += mouseX / zoom - posX - startX;
+    }
+
+    if (!isNaN(mouseY / zoom - posY - startY)) {
+      posY += mouseY / zoom - posY - startY;
+    }
+
+    startX = mouseX / zoom - posX;
+    startY = mouseY / zoom - posY;
     return;
   }
 
+  if (!moved && Math.abs(mouseX / zoom - posX - startX) + Math.abs(mouseY / zoom - posY - startY) > tolerance) {
+    moved = true;
+  }
+
   if (selection.type === "Corner") {
-    selection.x = mouseX;
-    selection.y = mouseY;
+    selection.x = mouseX / zoom - posX;
+    selection.y = mouseY / zoom - posY;
   } else if (selection.type === "Connection") {
     var m = selection.getSlope();
 
     if (Math.abs(m) === Infinity) {
-      selection.corner1.x = mouseX;
-      selection.corner2.x = mouseX;
+      selection.corner1.x = mouseX / zoom - posX;
+      selection.corner2.x = mouseX / zoom - posX;
     } else if (m === 0) {
-      selection.corner1.y = mouseY;
-      selection.corner2.y = mouseY;
+      selection.corner1.y = mouseY / zoom - posY;
+      selection.corner2.y = mouseY / zoom - posY;
     } else {
-      var parallelLine = new Line(m, mouseY - m * mouseX);
+      var parallelLine = new Line(m, mouseY / zoom - posY - m * (mouseX / zoom - posX));
       var perpendicularLine1 = new Line(-1 / m, selection.corner1.y - -1 / m * selection.corner1.x);
       var perpendicularLine2 = new Line(-1 / m, selection.corner2.y - -1 / m * selection.corner2.x);
 
@@ -326,16 +603,16 @@ var deleteCorner = function deleteCorner(corner) {
     return;
   }
 
-  var connections = objects.filter(function (o) {
+  var viableConnections = connections.filter(function (o) {
     return o.corner1 === corner || o.corner2 === corner;
   });
-  var connection1 = connections[0];
-  var connection2 = connections[1];
+  var connection1 = viableConnections[0];
+  var connection2 = viableConnections[1];
   var newConnection = new Connection(connection1.getOtherCorner(corner), connection2.getOtherCorner(corner));
-  objects.splice(objects.indexOf(corner), 1);
-  objects.splice(objects.indexOf(connection1), 1);
-  objects.splice(objects.indexOf(connection2), 1);
-  objects.push(newConnection);
+  corners.splice(corners.indexOf(corner), 1);
+  connections.splice(connections.indexOf(connection1), 1);
+  connections.splice(connections.indexOf(connection2), 1);
+  connections.push(newConnection);
   selection = undefined;
 };
 
@@ -348,6 +625,7 @@ function keyPressed() {
 }
 
 function mousePressed() {
+  console.log(mouseX, mouseY);
   selectFunction(onTouchDevice ? 3 : 1);
 }
 
@@ -370,4 +648,14 @@ function mouseReleased() {
 
 function touchEnded() {
   dragEnded();
+}
+
+function mouseWheel(event) {
+  if (event.delta < 0) {
+    zoom *= 1.1;
+  } else {
+    zoom /= 1.1;
+  }
+
+  return false;
 }

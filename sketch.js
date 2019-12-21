@@ -46,7 +46,7 @@ class Corner {
     }
 
     checkCollision(tolerance) {
-        if (Math.abs(this.x - mouseX) <= this.width && Math.abs(this.y - mouseY) <= (this.width) * tolerance) {
+        if (Math.abs(this.x - (mouseX/zoom - posX)) <= this.width && Math.abs(this.y - (mouseY/zoom - posY)) <= (this.width) * tolerance) {
             return true;
         }
     }
@@ -74,20 +74,6 @@ class Connection {
         strokeWeight(this.selected ? this.width * 2 : this.width);
         line(this.corner1.x, this.corner1.y, this.corner2.x, this.corner2.y);
 
-        /*strokeWeight(1);
-        textAlign(CENTER, CENTER);
-        textSize(12);
-        fill(0);
-        textFont('Georgia');
-        const x = (this.corner1.x + this.corner2.x) / 2;
-        const y = (this.corner1.y + this.corner2.y) / 2;
-        const diffX = x - center.x;
-        const diffY = y - center.y;
-        const partX = diffX / (Math.abs(diffX) + Math.abs(diffY));
-        const partY = diffY / (Math.abs(diffX) + Math.abs(diffY));
-        const length = Math.round(Math.sqrt(Math.pow(this.corner2.x - this.corner1.x, 2) + Math.pow(this.corner2.y - this.corner1.y, 2)) / 50, 2);
-        text(length + "m", x + 20*partX, y + 20*partY);*/
-
         if (this.corner1.selected || this.corner2.selected) {
             this.drawMeasurements();
         }
@@ -106,7 +92,7 @@ class Connection {
         const x = (this.corner1.x + this.corner2.x) / 2;
         const y = (this.corner1.y + this.corner2.y) / 2;
 
-        const color1 = get(x + (width / 2 + 1) * dy, y - (width / 2 + 1) * dx);
+        const color1 = get((x + (width / 2 + 1) * dy + posX)*zoom, (y - (width / 2 + 1) * dx+ posY)*zoom);
 
         strokeWeight(2);
         stroke(173, 216, 230);
@@ -164,8 +150,8 @@ class Connection {
     }
 
     checkCollision(tolerance) {
-        const distanceToCorner1 = Math.sqrt(Math.pow(this.corner1.x - mouseX, 2) + Math.pow(this.corner1.y - mouseY, 2));
-        const distanceToCorner2 = Math.sqrt(Math.pow(this.corner2.x - mouseX, 2) + Math.pow(this.corner2.y - mouseY, 2));
+        const distanceToCorner1 = Math.sqrt(Math.pow(this.corner1.x - (mouseX/zoom - posX), 2) + Math.pow(this.corner1.y - (mouseY/zoom - posY), 2));
+        const distanceToCorner2 = Math.sqrt(Math.pow(this.corner2.x - (mouseX/zoom - posX), 2) + Math.pow(this.corner2.y - (mouseY/zoom - posY), 2));
         const distanceBetweenCorners = Math.sqrt(Math.pow(this.corner2.x - this.corner1.x, 2) + Math.pow(this.corner2.y - this.corner1.y, 2));
         return distanceToCorner1 + distanceToCorner2 - distanceBetweenCorners <= 0.5 * tolerance;
     }
@@ -251,15 +237,27 @@ let timeout = undefined;
 let moved = false;
 let startX;
 let startY;
-let center;
+let posX = 0;
+let posY = 0;
 
 function setup() {
     createCanvas(displayWidth, displayHeight);
     frameRate(60);
+
+    var hammer = new Hammer(document.body, {preventDefault: true});
+    hammer.get('pinch').set({ enable: true });
+    hammer.on("pinch", e => {
+        zoom = e.scale;
+    });
 }
+
+let zoom = 1;
 
 function draw() {
     background(240);
+
+    scale(zoom);
+    translate(posX, posY);
 
     // Fill
     drawInFill();
@@ -277,6 +275,8 @@ function draw() {
         selection.draw();
     }
 
+    translate(-posX, -posY);
+    scale(1/zoom);
     deleteButton.draw();
 
     // Text
@@ -346,8 +346,8 @@ const drawInFill = () => {
 const selectFunction = (tolerance) => {
     const oldSelection = selection;
     selection = undefined;
-    startX = mouseX;
-    startY = mouseY;
+    startX = (mouseX/zoom - posX);
+    startY = (mouseY/zoom - posY);
     for (const object of corners) {
         if (!selection && object.checkCollision(tolerance)) {
             object.setSelection(true);
@@ -361,7 +361,7 @@ const selectFunction = (tolerance) => {
             selection = object;
             timeout = setTimeout(() => {
                 if (!moved) {
-                    const corner = new Corner(mouseX, mouseY);
+                    const corner = new Corner((mouseX/zoom - posX), (mouseY/zoom - posY));
                     const connection1 = new Connection(selection.corner1, corner);
                     const connection2 = new Connection(corner, selection.corner2);
                     corners.splice(corners.indexOf(selection), 1);
@@ -386,28 +386,39 @@ const selectFunction = (tolerance) => {
 }
 
 const dragFunction = (tolerance) => {
-    if (!moved && Math.abs(mouseX - startX) + Math.abs(mouseY - startY) > tolerance) {
-        moved = true;
-    }
-
     if (!selection) {
+        if(!isNaN((mouseX/zoom - posX) - startX)) {
+            posX += (mouseX/zoom - posX) - startX;
+        }
+
+        if(!isNaN((mouseY/zoom - posY) - startY)) {
+            posY += (mouseY/zoom - posY) - startY;
+        }
+
+        startX = (mouseX/zoom - posX);
+        startY = (mouseY/zoom - posY);
+
         return;
     }
 
+    if (!moved && Math.abs((mouseX/zoom - posX) - startX) + Math.abs((mouseY/zoom - posY) - startY) > tolerance) {
+        moved = true;
+    }
+
     if (selection.type === "Corner") {
-        selection.x = mouseX;
-        selection.y = mouseY;
+        selection.x = (mouseX/zoom - posX);
+        selection.y = (mouseY/zoom - posY);
     } else if (selection.type === "Connection") {
         const m = selection.getSlope();
 
         if (Math.abs(m) === Infinity) {
-            selection.corner1.x = mouseX;
-            selection.corner2.x = mouseX;
+            selection.corner1.x = (mouseX/zoom - posX);
+            selection.corner2.x = (mouseX/zoom - posX);
         } else if (m === 0) {
-            selection.corner1.y = mouseY;
-            selection.corner2.y = mouseY;
+            selection.corner1.y = (mouseY/zoom - posY);
+            selection.corner2.y = (mouseY/zoom - posY);
         } else {
-            const parallelLine = new Line(m, mouseY - m * mouseX);
+            const parallelLine = new Line(m, (mouseY/zoom - posY) - m * (mouseX/zoom - posX));
             const perpendicularLine1 = new Line(-1 / m, selection.corner1.y - (-1 / m) * selection.corner1.x);
             const perpendicularLine2 = new Line(-1 / m, selection.corner2.y - (-1 / m) * selection.corner2.x);
 
@@ -456,6 +467,7 @@ function keyPressed() {
 }
 
 function mousePressed() {
+    console.log(mouseX, mouseY);
     selectFunction(onTouchDevice ? 3 : 1);
 }
 
@@ -478,4 +490,14 @@ function mouseReleased() {
 
 function touchEnded() {
     dragEnded();
+}
+
+function mouseWheel(event) {
+    if(event.delta < 0) {
+        zoom *= 1.1;
+    } else {
+        zoom /= 1.1;
+    }
+
+    return false;
 }
