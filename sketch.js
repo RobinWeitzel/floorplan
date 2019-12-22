@@ -358,7 +358,6 @@ const selectFunction = (tolerance) => {
                     const corner = new Corner((mouseX/zoom - posX), (mouseY/zoom - posY));
                     const connection1 = new Connection(selection.corner1, corner);
                     const connection2 = new Connection(corner, selection.corner2);
-                    corners.splice(corners.indexOf(selection), 1);
                     connections.splice(connections.indexOf(object), 1);
                     corners.push(corner);
                     connections.push(connection1);
@@ -462,7 +461,6 @@ function keyPressed() {
 }
 
 function mousePressed() {
-    console.log(mouseX, mouseY);
     selectFunction(onTouchDevice ? 3 : 1);
 }
 

@@ -495,7 +495,6 @@ var selectFunction = function selectFunction(tolerance) {
 
             var _connection2 = new Connection(corner, selection.corner2);
 
-            corners.splice(corners.indexOf(selection), 1);
             connections.splice(connections.indexOf(object), 1);
             corners.push(corner);
             connections.push(_connection);
@@ -633,7 +632,6 @@ function keyPressed() {
 }
 
 function mousePressed() {
-  console.log(mouseX, mouseY);
   selectFunction(onTouchDevice ? 3 : 1);
 }
 
