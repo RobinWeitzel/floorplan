@@ -45,12 +45,22 @@ function () {
     key: "move",
     value: function move(controls) {
       function mousePressed(e) {
+        if (e.touches.length > 0) {
+          e.clientX = e.touches[0].clientX;
+          e.clientY = e.touches[0].clientY;
+        }
+
         controls.viewPos.isDragging = true;
         controls.viewPos.prevX = e.clientX;
         controls.viewPos.prevY = e.clientY;
       }
 
       function mouseDragged(e) {
+        if (e.touches.length > 0) {
+          e.clientX = e.touches[0].clientX;
+          e.clientY = e.touches[0].clientY;
+        }
+
         var _controls$viewPos = controls.viewPos,
             prevX = _controls$viewPos.prevX,
             prevY = _controls$viewPos.prevY,
@@ -394,12 +404,12 @@ function draw() {
   strokeWeight(1 / controls.view.zoom);
   stroke(151);
 
-  for (var i = 0; i < height / grid(); i++) {
+  for (var i = -1; i <= height / grid(); i++) {
     var y = (i * grid() - controls.view.y + controls.view.y % grid()) / controls.view.zoom;
     line(-controls.view.x / controls.view.zoom, y, (width - controls.view.x) / controls.view.zoom, y);
   }
 
-  for (var _i = 0; _i < width / grid(); _i++) {
+  for (var _i = -1; _i <= width / grid(); _i++) {
     var x = (_i * grid() - controls.view.x + controls.view.x % grid()) / controls.view.zoom;
     line(x, -controls.view.y / controls.view.zoom, x, (height - controls.view.y) / controls.view.zoom);
   } // Fill

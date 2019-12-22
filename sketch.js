@@ -17,12 +17,21 @@ const mobileAndTabletCheck = () => {
 class Controls {
     static move(controls) {
         function mousePressed(e) {
+            if(e.touches.length > 0) {
+                e.clientX = e.touches[0].clientX;
+                e.clientY = e.touches[0].clientY;
+            }
             controls.viewPos.isDragging = true;
             controls.viewPos.prevX = e.clientX;
             controls.viewPos.prevY = e.clientY;
         }
 
         function mouseDragged(e) {
+            if(e.touches.length > 0) {
+                e.clientX = e.touches[0].clientX;
+                e.clientY = e.touches[0].clientY;
+            }
+
             const { prevX, prevY, isDragging } = controls.viewPos;
             if (!isDragging) return;
 
@@ -307,12 +316,12 @@ function draw() {
     strokeWeight(1 / controls.view.zoom);
     stroke(151);
 
-    for(let i = 0; i < height/grid(); i++) {
+    for(let i = -1; i <= height/grid(); i++) {
         const y = (i*grid() - controls.view.y + controls.view.y % grid())/controls.view.zoom;
         line(-controls.view.x/controls.view.zoom, y, (width-controls.view.x)/controls.view.zoom, y);
     }
 
-    for(let i = 0; i < width/grid(); i++) {
+    for(let i = -1; i <= width/grid(); i++) {
         const x = (i*grid() - controls.view.x + controls.view.x % grid())/controls.view.zoom;
         line(x, -controls.view.y/controls.view.zoom, x, (height-controls.view.y)/controls.view.zoom);
     }
