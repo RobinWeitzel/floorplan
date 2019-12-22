@@ -12,6 +12,85 @@ const mobileAndTabletCheck = () => {
     return check;
 };
 
+
+
+class Controls {
+    static move(controls) {
+        function mousePressed(e) {
+            controls.viewPos.isDragging = true;
+            controls.viewPos.prevX = e.clientX;
+            controls.viewPos.prevY = e.clientY;
+        }
+
+        function mouseDragged(e) {
+            const { prevX, prevY, isDragging } = controls.viewPos;
+            if (!isDragging) return;
+
+            const pos = { x: e.clientX, y: e.clientY };
+            const dx = pos.x - prevX;
+            const dy = pos.y - prevY;
+
+            if (prevX || prevY) {
+                controls.view.x += dx;
+                controls.view.y += dy;
+                controls.viewPos.prevX = pos.x, controls.viewPos.prevY = pos.y
+            }
+        }
+
+        function mouseReleased(e) {
+            controls.viewPos.isDragging = false;
+            controls.viewPos.prevX = null;
+            controls.viewPos.prevY = null;
+        }
+
+        return {
+            mousePressed,
+            mouseDragged,
+            mouseReleased
+        }
+    }
+
+    static zoom(controls) {
+        function worldZoom(e) {
+            let delta;
+            let x;
+            let y;
+            let newZoom;
+            if(e.scale) { // pinch to zoom
+                x = e.center.x;
+                y = e.center.y;
+
+                if(e.scale <= 0.75) {
+                    newZoom = 0.5;
+                } else if(e.scale <= 1.5) {
+                    newZoom = 1;
+                } else if(e.scale <= 3) {
+                    newZoom = 2;
+                } else {
+                    newZoom = 4;
+                }
+            } else {
+                const { x, y, deltaY} = e;
+                if (deltaY < 0) {
+                    newZoom = Math.min(4, controls.view.zoom*2);
+                } else {
+                    newZoom = Math.max(0.5, controls.view.zoom/2);
+                }
+            }
+            const zoom = newZoom - controls.view.zoom;
+
+            const wx = (x - controls.view.x) / (width * controls.view.zoom);
+            const wy = (y - controls.view.y) / (height * controls.view.zoom);
+
+            controls.view.x -= wx * width * zoom;
+            controls.view.y -= wy * height * zoom;
+            controls.view.zoom += zoom;
+        }
+
+        return { worldZoom }
+    }
+}
+
 class Line {
     constructor(a, b) {
         this.a = a;
@@ -41,12 +120,12 @@ class Corner {
         } else {
             stroke(0);
         }
-        strokeWeight(this.selected ? this.width * 2 : this.width);
+        strokeWeight((this.selected ? this.width * 2 : this.width)/controls.view.zoom);
         point(this.x, this.y);
     }
 
     checkCollision(tolerance) {
-        if (Math.abs(this.x - (mouseX/zoom - posX)) <= this.width && Math.abs(this.y - (mouseY/zoom - posY)) <= (this.width) * tolerance) {
+        if (Math.abs(this.x - ((mouseX - controls.view.x) / controls.view.zoom)) <= this.width && Math.abs(this.y - ((mouseY - controls.view.y) / controls.view.zoom)) <= (this.width) * tolerance) {
             return true;
         }
     }
@@ -71,7 +150,7 @@ class Connection {
         } else {
             stroke(0);
         }
-        strokeWeight(this.selected ? this.width * 2 : this.width);
+        strokeWeight((this.selected ? this.width * 2 : this.width)/controls.view.zoom);
         line(this.corner1.x, this.corner1.y, this.corner2.x, this.corner2.y);
 
         if (this.corner1.selected || this.corner2.selected) {
@@ -92,9 +171,10 @@ class Connection {
         const x = (this.corner1.x + this.corner2.x) / 2;
         const y = (this.corner1.y + this.corner2.y) / 2;
 
-        const color1 = get((x + (width / 2 + 1) * dy + posX)*zoom, (y - (width / 2 + 1) * dx+ posY)*zoom);
+        const color1 = get((x + (width / 2 + 1) * dy) * controls.view.zoom + controls.view.x, (y - (width / 2 + 1) * dx) * controls.view.zoom + controls.view.y);
+        //const color1 = get((x + (width / 2 + 1) * dy), (y - (width / 2 + 1) * dx));
 
-        strokeWeight(2);
+        strokeWeight(2/controls.view.zoom);
         stroke(173, 216, 230);
         drawingContext.setLineDash([10, 10]);
 
@@ -110,7 +190,7 @@ class Connection {
 
             line(x1, y1, x2, y2);
             line(x3, y3, x4, y4);
-            
+
             drawingContext.setLineDash([]);
             line(this.corner1.x, this.corner1.y, x1, y1);
             line(this.corner2.x, this.corner2.y, x4, y4);
@@ -121,7 +201,7 @@ class Connection {
             textAlign(CENTER, CENTER);
             textSize(12);
             textFont('Georgia');
-            text(Math.round(dist/50*10)/10 + "m", x - desiredDistance * dy, y + desiredDistance * dx);
+            text(Math.round(dist / 50 * 10) / 10 + "m", x - desiredDistance * dy, y + desiredDistance * dx);
         } else {
             const x1 = this.corner1.x + desiredDistance * dy;
             const y1 = this.corner1.y - desiredDistance * dx;
@@ -145,13 +225,13 @@ class Connection {
             textAlign(CENTER, CENTER);
             textSize(12);
             textFont('Georgia');
-            text(Math.round(dist/50*10)/10 + "m", x + desiredDistance * dy, y - desiredDistance * dx);
+            text(Math.round(dist / 50 * 10) / 10 + "m", x + desiredDistance * dy, y - desiredDistance * dx);
         }
     }
 
     checkCollision(tolerance) {
-        const distanceToCorner1 = Math.sqrt(Math.pow(this.corner1.x - (mouseX/zoom - posX), 2) + Math.pow(this.corner1.y - (mouseY/zoom - posY), 2));
-        const distanceToCorner2 = Math.sqrt(Math.pow(this.corner2.x - (mouseX/zoom - posX), 2) + Math.pow(this.corner2.y - (mouseY/zoom - posY), 2));
+        const distanceToCorner1 = Math.sqrt(Math.pow(this.corner1.x - ((mouseX - controls.view.x) / controls.view.zoom), 2) + Math.pow(this.corner1.y - ((mouseY - controls.view.y) / controls.view.zoom), 2));
+        const distanceToCorner2 = Math.sqrt(Math.pow(this.corner2.x - ((mouseX - controls.view.x) / controls.view.zoom), 2) + Math.pow(this.corner2.y - ((mouseY - controls.view.y) / controls.view.zoom), 2));
         const distanceBetweenCorners = Math.sqrt(Math.pow(this.corner2.x - this.corner1.x, 2) + Math.pow(this.corner2.y - this.corner1.y, 2));
         return distanceToCorner1 + distanceToCorner2 - distanceBetweenCorners <= 0.5 * tolerance;
     }
@@ -177,43 +257,10 @@ class Connection {
     }
 }
 
-class Button {
-    constructor(x, y, text) {
-        this.x = x;
-        this.y = y;
-        this.text = text;
-        this.width = 150;
-        this.height = 50;
-        this.type = "Button";
-        this.selected = false;
-    }
-
-    draw() {
-        stroke(0);
-        fill(255);
-        strokeWeight(3);
-        rect(this.x, this.y, this.width, this.height);
-        strokeWeight(1);
-        textAlign(CENTER, CENTER);
-        textSize(16);
-        fill(0);
-        textFont('Georgia');
-        text(this.text, this.x + this.width / 2, this.y + this.height / 2);
-    }
-
-    checkCollision(tolerance) {
-        if (mouseX < this.x || mouseX > this.x + this.width)
-            return false;
-
-        if (mouseY < this.y || mouseY > this.y + this.height)
-            return false;
-
-        return true;
-    }
-
-    setSelection(selected) {
-        this.selected = selected;
-    }
+let canvas;
+const controls = {
+    view: { x: 0, y: 0, zoom: 1 },
+    viewPos: { prevX: null, prevY: null, isDragging: false },
 }
 
 const onTouchDevice = mobileAndTabletCheck();
@@ -226,7 +273,6 @@ const connection1 = new Connection(corner1, corner2);
 const connection2 = new Connection(corner1, corner3);
 const connection3 = new Connection(corner2, corner4);
 const connection4 = new Connection(corner3, corner4);
-const deleteButton = new Button(0, 0, "Delete Corner");
 const corners = [corner1, corner2, corner3, corner4];
 const connections = [connection1, connection2, connection3, connection4];
 
@@ -235,34 +281,46 @@ let selection = undefined;
 let timeout = undefined;
 
 let moved = false;
+
+let oldSelection;
 let startX;
 let startY;
-let posX = 0;
-let posY = 0;
+
+const grid = () => 50 / controls.view.zoom;
 
 function setup() {
-    createCanvas(displayWidth, displayHeight);
-    frameRate(60);
+    canvas = createCanvas(document.getElementById('sketch-holder').offsetWidth - 30, document.getElementById('sketch-holder').offsetHeight);
+    canvas.parent('sketch-holder');
 
-    var hammer = new Hammer(document.body, {preventDefault: true});
+    canvas.mouseWheel(e => Controls.zoom(controls).worldZoom(e))
+
+    const hammer = new Hammer(document.body, { preventDefault: true });
     hammer.get('pinch').set({ enable: true });
-    hammer.on("pinch", e => {
-        zoom = e.scale;
-    });
+    hammer.on("pinch", e => Controls.zoom(controls).worldZoom(e));
 }
 
-let zoom = 1;
-
 function draw() {
-    background(240);
+    background(254)
+    translate(controls.view.x, controls.view.y);
+    scale(controls.view.zoom);
 
-    scale(zoom);
-    translate(posX, posY);
+    strokeWeight(1 / controls.view.zoom);
+    stroke(151);
+
+    for(let i = 0; i < height/grid(); i++) {
+        const y = (i*grid() - controls.view.y + controls.view.y % grid())/controls.view.zoom;
+        line(-controls.view.x/controls.view.zoom, y, (width-controls.view.x)/controls.view.zoom, y);
+    }
+
+    for(let i = 0; i < width/grid(); i++) {
+        const x = (i*grid() - controls.view.x + controls.view.x % grid())/controls.view.zoom;
+        line(x, -controls.view.y/controls.view.zoom, x, (height-controls.view.y)/controls.view.zoom);
+    }
 
     // Fill
     drawInFill();
 
-    // Lines
+    // Outline
     for (const connection of connections.filter(connection => connection !== selection)) {
         connection.draw();
     }
@@ -274,20 +332,8 @@ function draw() {
     if (selection) {
         selection.draw();
     }
-
-    translate(-posX, -posY);
-    scale(1/zoom);
-    deleteButton.draw();
-
-    // Text
-    stroke(0);
-    fill(0);
-    strokeWeight(1);
-    textAlign(LEFT, TOP);
-    textSize(16);
-    textFont('Georgia');
-    text("Hold line pressed to\ncreate corner", 200, 20);
 }
+
 
 const drawInFill = () => {
     const cornersVisited = [];
@@ -323,25 +369,25 @@ const drawInFill = () => {
     area += (start.x * corners[0].y) - (corners[0].x * start.y);
     area /= 2;
     area = Math.round(area / Math.pow(50, 2) * 10) / 10;
-    if(area < 0)
+    if (area < 0)
         area *= -1;
 
     stroke(0);
     fill(0);
-    strokeWeight(1);
+    strokeWeight(1/controls.view.zoom);
     textAlign(LEFT, TOP);
-    textSize(16);
+    textSize(8 + 8/controls.view.zoom);
     textFont('Georgia');
-    
+
     const [x, y] = polylabel([cornersVisited.map(c => [c.x, c.y])], 1.0);
     text(area + "m" + char(178), x, y);
 }
 
-const selectFunction = (tolerance) => {
-    const oldSelection = selection;
+const selectFunction = (e, tolerance) => {
+    oldSelection = selection;
     selection = undefined;
-    startX = (mouseX/zoom - posX);
-    startY = (mouseY/zoom - posY);
+    startX = ((mouseX - controls.view.x) / controls.view.zoom);
+    startY = ((mouseY - controls.view.y) / controls.view.zoom);
     for (const object of corners) {
         if (!selection && object.checkCollision(tolerance)) {
             object.setSelection(true);
@@ -355,7 +401,7 @@ const selectFunction = (tolerance) => {
             selection = object;
             timeout = setTimeout(() => {
                 if (!moved) {
-                    const corner = new Corner((mouseX/zoom - posX), (mouseY/zoom - posY));
+                    const corner = new Corner(((mouseX - controls.view.x) / controls.view.zoom), ((mouseY - controls.view.y) / controls.view.zoom));
                     const connection1 = new Connection(selection.corner1, corner);
                     const connection2 = new Connection(corner, selection.corner2);
                     connections.splice(connections.indexOf(object), 1);
@@ -371,48 +417,56 @@ const selectFunction = (tolerance) => {
         }
     }
 
-    if (!selection && deleteButton.checkCollision(tolerance)) {
-        deleteCorner(oldSelection);
+    if (!selection) {
+        Controls.move(controls).mousePressed(e);
     }
 
     corners.filter(o => selection === undefined || (o !== selection && o !== selection.corner1 && o !== selection.corner2)).forEach(o => o.setSelection(false));
     connections.filter(o => o !== selection).forEach(o => o.setSelection(false));
 }
 
-const dragFunction = (tolerance) => {
+
+const dragFunction = (e, tolerance) => {
     if (!selection) {
-        if(!isNaN((mouseX/zoom - posX) - startX)) {
-            posX += (mouseX/zoom - posX) - startX;
-        }
-
-        if(!isNaN((mouseY/zoom - posY) - startY)) {
-            posY += (mouseY/zoom - posY) - startY;
-        }
-
-        startX = (mouseX/zoom - posX);
-        startY = (mouseY/zoom - posY);
-
+        Controls.move(controls).mouseDragged(e);
         return;
     }
 
-    if (!moved && Math.abs((mouseX/zoom - posX) - startX) + Math.abs((mouseY/zoom - posY) - startY) > tolerance) {
+    if (!moved && Math.abs(((mouseX - controls.view.x) / controls.view.zoom) - startX) + Math.abs(((mouseY - controls.view.y) / controls.view.zoom) - startY) > tolerance) {
         moved = true;
     }
 
+    let snappedMouseX = ((mouseX - controls.view.x) / controls.view.zoom);
+    let snappedMouseY = ((mouseY - controls.view.y) / controls.view.zoom);
+
+    const cleanedGrid = (grid()/controls.view.zoom);
+
+    if(snappedMouseX % cleanedGrid < cleanedGrid * 0.25) {
+        snappedMouseX = Math.floor(snappedMouseX/cleanedGrid) * cleanedGrid;
+    } else if(snappedMouseX % cleanedGrid >  cleanedGrid * 0.75) {
+        snappedMouseX = Math.ceil(snappedMouseX/cleanedGrid) * cleanedGrid;
+    }
+
+    if(snappedMouseY % cleanedGrid <  cleanedGrid * 0.25) {
+        snappedMouseY = Math.floor(snappedMouseY/cleanedGrid) * cleanedGrid;
+    } else if(snappedMouseY % cleanedGrid >  cleanedGrid * 0.75) {
+        snappedMouseY = Math.ceil(snappedMouseY/cleanedGrid) * cleanedGrid;
+    }
+
     if (selection.type === "Corner") {
-        selection.x = (mouseX/zoom - posX);
-        selection.y = (mouseY/zoom - posY);
+        selection.x = snappedMouseX;
+        selection.y = snappedMouseY;
     } else if (selection.type === "Connection") {
         const m = selection.getSlope();
 
         if (Math.abs(m) === Infinity) {
-            selection.corner1.x = (mouseX/zoom - posX);
-            selection.corner2.x = (mouseX/zoom - posX);
+            selection.corner1.x = snappedMouseX;
+            selection.corner2.x = snappedMouseX;
         } else if (m === 0) {
-            selection.corner1.y = (mouseY/zoom - posY);
-            selection.corner2.y = (mouseY/zoom - posY);
+            selection.corner1.y = snappedMouseY;
+            selection.corner2.y = snappedMouseY;
         } else {
-            const parallelLine = new Line(m, (mouseY/zoom - posY) - m * (mouseX/zoom - posX));
+            const parallelLine = new Line(m, snappedMouseY - m * snappedMouseX);
             const perpendicularLine1 = new Line(-1 / m, selection.corner1.y - (-1 / m) * selection.corner1.x);
             const perpendicularLine2 = new Line(-1 / m, selection.corner2.y - (-1 / m) * selection.corner2.x);
 
@@ -422,7 +476,7 @@ const dragFunction = (tolerance) => {
     }
 }
 
-const dragEnded = () => {
+const dragEnded = e => {
     moved = false;
     startX = undefined;
     startY = undefined;
@@ -430,6 +484,8 @@ const dragEnded = () => {
     if (timeout) {
         clearTimeout(timeout);
     }
+
+    Controls.move(controls).mouseReleased(e)
 }
 
 const deleteCorner = (corner) => {
@@ -460,37 +516,27 @@ function keyPressed() {
     return false;
 }
 
-function mousePressed() {
-    selectFunction(onTouchDevice ? 3 : 1);
+function mousePressed(e) {
+    selectFunction(e, onTouchDevice ? 3 : 1);
 }
 
-function touchStarted() {
-    selectFunction(3);
+function touchStarted(e) {
+    selectFunction(e, 3);
 }
 
-function mouseDragged() {
-    dragFunction(onTouchDevice ? 25 : 5);
+function mouseDragged(e) {
+    dragFunction(e, onTouchDevice ? 25 : 5);
 }
 
-function touchMoved() {
-    dragFunction(25);
+function touchMoved(e) {
+    dragFunction(e, 25);
     return false;
 }
 
-function mouseReleased() {
-    dragEnded();
+function mouseReleased(e) {
+    dragEnded(e);
 }
 
-function touchEnded() {
-    dragEnded();
-}
-
-function mouseWheel(event) {
-    if(event.delta < 0) {
-        zoom *= 1.1;
-    } else {
-        zoom /= 1.1;
-    }
-
-    return false;
+function touchEnded(e) {
+    dragEnded(e);
 }

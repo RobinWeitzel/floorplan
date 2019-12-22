@@ -7,10 +7,11 @@
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Floorplan</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <script src="p5.min.js"></script>
     <script src="hammer.min.js"></script>
     <script src="polylabel.js"></script>
-    <script src="sketch.js"></script>
+    <script src="sketch.es5.js"></script>
 
     <style>
         html,
@@ -26,10 +27,34 @@
             -ms-user-select: none; /* IE10+/Edge */
             user-select: none; /* Standard */
         }
+
+        #sketch-holder {
+            height: 400px;
+        }
     </style>
 </head>
 <body>
-
+    <div class="container-fluid">
+        <row>
+            <div class="col-12">
+                <h3 style="text-align: center;">Floorplan Designer</h3>
+            </div>
+        </row>
+        <div class="row">
+            <div class="col-md-2 col-lg-3"></div>
+            <div id="sketch-holder" class="col-12 col-md-8 col-lg-6">
+                <!-- Our sketch will go here! -->
+            </div>
+            <div class="col-md-2 col-lg-3"></div>
+        </div>
+        <div class="row" style="margin-top: 20px;">
+            <div class="col-md-2 col-lg-3"></div>
+            <div class="col-12 col-md-8 col-lg-6">
+                <button type="button" class="btn btn-danger" onclick="deleteCorner(oldSelection)">Delete Corner</button>
+            </div>
+            <div class="col-md-2 col-lg-3"></div>
+        </div>
+    </div>
 </body>
 
 </html>
