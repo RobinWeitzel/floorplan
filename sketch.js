@@ -17,21 +17,12 @@ const mobileAndTabletCheck = () => {
 class Controls {
     static move(controls) {
         function mousePressed(e) {
-            if(e.touches.length > 0) {
-                e.clientX = e.touches[0].clientX;
-                e.clientY = e.touches[0].clientY;
-            }
             controls.viewPos.isDragging = true;
             controls.viewPos.prevX = e.clientX;
             controls.viewPos.prevY = e.clientY;
         }
 
         function mouseDragged(e) {
-            if(e.touches.length > 0) {
-                e.clientX = e.touches[0].clientX;
-                e.clientY = e.touches[0].clientY;
-            }
-
             const { prevX, prevY, isDragging } = controls.viewPos;
             if (!isDragging) return;
 
@@ -526,20 +517,45 @@ function keyPressed() {
 }
 
 function mousePressed(e) {
-    selectFunction(e, onTouchDevice ? 3 : 1);
+    const {x, y, width, height} = document.getElementById('sketch-holder').getBoundingClientRect();
+    if(e.clientX >= x && e.clientX <= x + width && e.clientY >= y && e.clientY <= y + height) {
+        selectFunction(e, onTouchDevice ? 3 : 1);
+    }   
 }
 
 function touchStarted(e) {
-    selectFunction(e, 3);
+    if(e.touches && e.touches.length > 0) {
+        e.clientX = e.touches[0].clientX;
+        e.clientY = e.touches[0].clientY;
+    }
+
+    const {x, y, width, height} = document.getElementById('sketch-holder').getBoundingClientRect();
+    if(e.clientX >= x && e.clientX <= x + width && e.clientY >= y && e.clientY <= y + height) {
+        selectFunction(e, 3);
+        e.preventDefault();
+        return false;
+    }
 }
 
 function mouseDragged(e) {
-    dragFunction(e, onTouchDevice ? 25 : 5);
+    const {x, y, width, height} = document.getElementById('sketch-holder').getBoundingClientRect();
+    if(e.clientX >= x && e.clientX <= x + width && e.clientY >= y && e.clientY <= y + height) {
+        dragFunction(e, onTouchDevice ? 25 : 5);
+    }
 }
 
 function touchMoved(e) {
-    dragFunction(e, 25);
-    return false;
+    if(e.touches && e.touches.length > 0) {
+        e.clientX = e.touches[0].clientX;
+        e.clientY = e.touches[0].clientY;
+    }
+
+    const {x, y, width, height} = document.getElementById('sketch-holder').getBoundingClientRect();
+    if(e.clientX >= x && e.clientX <= x + width && e.clientY >= y && e.clientY <= y + height) {
+        dragFunction(e, 25);
+        e.preventDefault();
+        return false;
+    }
 }
 
 function mouseReleased(e) {

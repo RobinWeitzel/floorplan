@@ -45,22 +45,12 @@ function () {
     key: "move",
     value: function move(controls) {
       function mousePressed(e) {
-        if (e.touches.length > 0) {
-          e.clientX = e.touches[0].clientX;
-          e.clientY = e.touches[0].clientY;
-        }
-
         controls.viewPos.isDragging = true;
         controls.viewPos.prevX = e.clientX;
         controls.viewPos.prevY = e.clientY;
       }
 
       function mouseDragged(e) {
-        if (e.touches.length > 0) {
-          e.clientX = e.touches[0].clientX;
-          e.clientY = e.touches[0].clientY;
-        }
-
         var _controls$viewPos = controls.viewPos,
             prevX = _controls$viewPos.prevX,
             prevY = _controls$viewPos.prevY,
@@ -723,20 +713,65 @@ function keyPressed() {
 }
 
 function mousePressed(e) {
-  selectFunction(e, onTouchDevice ? 3 : 1);
+  var _document$getElementB = document.getElementById('sketch-holder').getBoundingClientRect(),
+      x = _document$getElementB.x,
+      y = _document$getElementB.y,
+      width = _document$getElementB.width,
+      height = _document$getElementB.height;
+
+  if (e.clientX >= x && e.clientX <= x + width && e.clientY >= y && e.clientY <= y + height) {
+    selectFunction(e, onTouchDevice ? 3 : 1);
+  }
 }
 
 function touchStarted(e) {
-  selectFunction(e, 3);
+  if (e.touches && e.touches.length > 0) {
+    e.clientX = e.touches[0].clientX;
+    e.clientY = e.touches[0].clientY;
+  }
+
+  var _document$getElementB2 = document.getElementById('sketch-holder').getBoundingClientRect(),
+      x = _document$getElementB2.x,
+      y = _document$getElementB2.y,
+      width = _document$getElementB2.width,
+      height = _document$getElementB2.height;
+
+  if (e.clientX >= x && e.clientX <= x + width && e.clientY >= y && e.clientY <= y + height) {
+    selectFunction(e, 3);
+    e.preventDefault();
+    return false;
+  }
 }
 
 function mouseDragged(e) {
-  dragFunction(e, onTouchDevice ? 25 : 5);
+  var _document$getElementB3 = document.getElementById('sketch-holder').getBoundingClientRect(),
+      x = _document$getElementB3.x,
+      y = _document$getElementB3.y,
+      width = _document$getElementB3.width,
+      height = _document$getElementB3.height;
+
+  if (e.clientX >= x && e.clientX <= x + width && e.clientY >= y && e.clientY <= y + height) {
+    dragFunction(e, onTouchDevice ? 25 : 5);
+  }
 }
 
 function touchMoved(e) {
-  dragFunction(e, 25);
-  return false;
+  if (e.touches && e.touches.length > 0) {
+    e.clientX = e.touches[0].clientX;
+    e.clientY = e.touches[0].clientY;
+  }
+
+  var _document$getElementB4 = document.getElementById('sketch-holder').getBoundingClientRect(),
+      x = _document$getElementB4.x,
+      y = _document$getElementB4.y,
+      width = _document$getElementB4.width,
+      height = _document$getElementB4.height;
+
+  if (e.clientX >= x && e.clientX <= x + width && e.clientY >= y && e.clientY <= y + height) {
+    dragFunction(e, 25);
+    e.preventDefault();
+    return false;
+  }
 }
 
 function mouseReleased(e) {
