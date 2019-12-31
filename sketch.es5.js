@@ -86,7 +86,6 @@ function () {
     key: "zoom",
     value: function zoom(controls) {
       function worldZoom(e) {
-        var delta;
         var x;
         var y;
         var newZoom;
@@ -106,9 +105,9 @@ function () {
             newZoom = 4;
           }
         } else {
-          var _x = e.x,
-              _y = e.y,
-              deltaY = e.deltaY;
+          x = e.x;
+          y = e.y;
+          var deltaY = e.deltaY;
 
           if (deltaY < 0) {
             newZoom = Math.min(4, controls.view.zoom * 2);
@@ -268,27 +267,27 @@ function () {
         textFont('Georgia');
         text(Math.round(dist / 50 * 10) / 10 + "m", x - desiredDistance * dy, y + desiredDistance * dx);
       } else {
-        var _x2 = this.corner1.x + desiredDistance * dy;
+        var _x = this.corner1.x + desiredDistance * dy;
 
-        var _y2 = this.corner1.y - desiredDistance * dx;
+        var _y = this.corner1.y - desiredDistance * dx;
 
-        var _x3 = this.corner2.x + desiredDistance * dy;
+        var _x2 = this.corner2.x + desiredDistance * dy;
 
-        var _y3 = this.corner2.y - desiredDistance * dx;
+        var _y2 = this.corner2.y - desiredDistance * dx;
 
-        var _x4 = _x2 - (dist / 2 - 20) * dx;
+        var _x3 = _x - (dist / 2 - 20) * dx;
 
-        var _y4 = _y2 - (dist / 2 - 20) * dy;
+        var _y3 = _y - (dist / 2 - 20) * dy;
 
-        var _x5 = _x2 - (dist / 2 + 20) * dx;
+        var _x4 = _x - (dist / 2 + 20) * dx;
 
-        var _y5 = _y2 - (dist / 2 + 20) * dy;
+        var _y4 = _y - (dist / 2 + 20) * dy;
 
-        line(_x2, _y2, _x4, _y4);
-        line(_x5, _y5, _x3, _y3);
+        line(_x, _y, _x3, _y3);
+        line(_x4, _y4, _x2, _y2);
         drawingContext.setLineDash([]);
-        line(this.corner1.x, this.corner1.y, _x2, _y2);
-        line(this.corner2.x, this.corner2.y, _x3, _y3); // text
+        line(this.corner1.x, this.corner1.y, _x, _y);
+        line(this.corner2.x, this.corner2.y, _x2, _y2); // text
 
         strokeWeight(0.5);
         fill(173, 216, 230);

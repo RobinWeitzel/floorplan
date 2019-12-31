@@ -52,7 +52,6 @@ class Controls {
 
     static zoom(controls) {
         function worldZoom(e) {
-            let delta;
             let x;
             let y;
             let newZoom;
@@ -70,7 +69,10 @@ class Controls {
                     newZoom = 4;
                 }
             } else {
-                const { x, y, deltaY} = e;
+                x = e.x;
+                y = e.y;
+                const deltaY = e.deltaY;
+                
                 if (deltaY < 0) {
                     newZoom = Math.min(4, controls.view.zoom*2);
                 } else {
